@@ -1007,7 +1007,7 @@ public class MavenCli
                 slf4jLogger.error( "" );
                 slf4jLogger.error( "After correcting the problems, you can resume the build with the command" );
                 slf4jLogger.error( buffer().a( "  " ).strong( "mvn <goals> -rf "
-                    + getFailedProject( result.getTopologicallySortedProjects(), project ) ).toString() );
+                    + getRestartFrom( result.getTopologicallySortedProjects(), project ) ).toString() );
             }
 
             if ( MavenExecutionRequest.REACTOR_FAIL_NEVER.equals( cliRequest.request.getReactorFailureBehavior() ) )
@@ -1028,19 +1028,22 @@ public class MavenCli
     }
 
     /**
-     * A helper method to determine the value returned for re-execution of the build.
-     *
-     * By default -rf :artifactId will pick up first module which matches, but quite often failed project might be later
-     * in build queue. This means that developer will either have to type group id or wait for build execution of all
+     * A helper method to determine the value to restart the build with <code>-rf</code> taking into account edge case
+     * where multiple modules in reactor have the same artifactId.
+     * <p>
+     * <code>-rf :artifactId</code> will pick up first module which matches, but when multiple modules in reactor
+     * have the same artifactId, effective failed module might be later in build reactor.
+     * This means that developer will either have to type group id or wait for build execution of all
      * modules which were fine, but they are still before one which reported errors.
-     * Since build reactor might contain multiple projects with same artifact id for developer convenience we print
-     * out groupId:artifactId when there is a name clash and :artifactId if there is no conflict.
+     * <p>Then the returned value is <code>groupId:artifactId</code> when there is a name clash and
+     * <code>:artifactId</code> if there is no conflict.
      *
      * @param mavenProjects Maven projects which are part of build execution.
      * @param failedProject Project which has failed.
-     * @return Value for -rf flag to restart build exactly from place where it failed.
+     * @return Value for -rf flag to restart build exactly from place where it failed (<code>:artifactId</code> in
+     *    general and <code>groupId:artifactId</code> when there is a name clash).
      */
-    private String getFailedProject( List<MavenProject> mavenProjects, MavenProject failedProject )
+    private String getRestartFrom( List<MavenProject> mavenProjects, MavenProject failedProject )
     {
         for ( MavenProject buildProject : mavenProjects )
         {
