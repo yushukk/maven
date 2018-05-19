@@ -20,7 +20,7 @@
 properties([buildDiscarder(logRotator(artifactNumToKeepStr: '5', numToKeepStr: env.BRANCH_NAME=='master'?'10':'5'))])
 
 def buildOs = 'linux'
-def buildJdk = '8'
+def buildJdk = 'jdk-1.7.0_79 (unlimited security)'
 def buildMvn = '3.5.0'
 def tests
 def CORE_IT_PROFILES='run-its,embedded'
@@ -36,7 +36,7 @@ node(jenkinsEnv.labelForOS(buildOs)) {
         def WORK_DIR=pwd()
 
         stage('Build / Unit Test') {
-            String jdkName = jenkinsEnv.jdkFromVersion(buildOs, buildJdk)
+            String jdkName = buildJdk //jenkinsEnv.jdkFromVersion(buildOs, buildJdk)
             String mvnName = jenkinsEnv.mvnFromVersion(buildOs, buildMvn)
             withMaven(jdk: jdkName, maven: mvnName, mavenLocalRepo:"${WORK_DIR}/.repository", options:[
                 artifactsPublisher(disabled: false),
@@ -47,7 +47,7 @@ node(jenkinsEnv.labelForOS(buildOs)) {
                 invokerPublisher(),
                 pipelineGraphPublisher()
             ]) {
-                sh "mvn clean verify -B -U -e -fae -V -Dmaven.test.failure.ignore=true"
+                sh "mvn clean verify -B -U -e -fae -V -Dmaven.test.failure.ignore=true -Dhttps.protocols=TLSv1,TLSv1.1,TLSv1.2"
             }
             dir ('apache-maven/target') {
                 sh "mv apache-maven-*-bin.zip apache-maven-dist.zip"
